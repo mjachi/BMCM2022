@@ -19,10 +19,11 @@ def sine_source(t, f=40):
     return np.sin(2 * np.pi*f*t)
 
 
-def awefem(mesh, t, source_loc=None):
+def awefem(mesh, t, V, source_loc=None):
 
     # Function space
-    V = FunctionSpace(mesh, "Lagrange", 1)
+    CGFS = FunctionSpace(mesh, 'CG', 1)
+    DGFS = FunctionSpace(mesh, 'DG', 0)
 
     # Boundary condition
     bc = DirichletBC(V, Constant(0), "on_boundary")
@@ -58,6 +59,8 @@ def awefem(mesh, t, source_loc=None):
     else:
         source_loc = Point(source_loc)
 
+    resarray = []
+
     # Time stepping
     for i, t_ in enumerate(t[1:]):
         b = assemble(L)
@@ -68,23 +71,61 @@ def awefem(mesh, t, source_loc=None):
         u0.assign(u1)
         u1.assign(u)
 
-        if t_ in [0.001, 0.01, 0.1, 0.25, 0.5, 0.75, 1.0]:
-            plot(
-                u,
-                vmin=.0,     # sets a minimum to the color scale
-                vmax=0.003,
-                cmap='rainbow', # the color map style
-                alpha=1,        # transparency of the mesh
-                title="Approximation at time step {:03f}".format(t_)
-            )  # continue execution
-        plt.show()
+        resarray.append(u.vector().get_local())
+
+        #resarray.append(interpolate(project(sqrt(inner(u,u)), V), DGFS).vector()[:])
+
+        #if t_ in [0.001, 0.01, 0.1, 0.25, 0.5, 0.75, 1.0]:
+        #    plot(
+        #        u,
+        #        vmin=.0,     # sets a minimum to the color scale
+        #        vmax=0.003,
+        #        cmap='rainbow', # the color map style
+        #        alpha=1,        # transparency of the mesh
+        #        title="Approximation at time step {:03f}".format(t_)
+        #    )  # continue execution
+        #plt.show()
+
+    return np.array(resarray)
 
 if __name__ == "__main__":
 
-    ot, dt, nt = 0.0, 1e-3, 1000
+    ot, dt, nt = 0.0, 1e-3, 100
     t = ot + np.arange(nt) * dt
 
-    mesh = UnitSquareMesh(200, 200, "crossed")
-    #plot(mesh, title="Finite Element Mesh")
+    mesh = UnitSquareMesh(50, 50, "crossed")
 
-    awefem(mesh, t, source_loc=(0.5, 0.1))
+    V = FunctionSpace(mesh, "Lagrange", 1)
+
+    res = awefem(mesh, t, V, source_loc=(0.5, 0.1))
+    #element_averages = []
+#
+    #for element in range(len(res[0])): 
+    #    elt_avg = 0 
+    #    for time_step in range(len(t) - 1): 
+    #        elt_avg += res[time_step][element]
+    #    
+    #    elt_avg = elt_avg / len(t)
+    #    element_averages.append(elt_avg)
+
+    dof_averages = np.mean(res, axis=0)
+    n = V.dim() 
+    d = mesh.geometry().dim() 
+    dof_coordinates = V.tabulate_dof_coordinates() 
+    dof_coordinates.resize((n, d)) 
+    dof_x = dof_coordinates[:, 0]
+    dof_y = dof_coordinates[:, 1]
+
+    print(res.shape)
+    print(len(dof_coordinates))
+    print(len(dof_averages))
+
+    fig = plt.figure() 
+    ax = fig.add_subplot(111, projection='3d')
+    #ax.scatter(dof_x, dof_y, dof_averages, cmap='virdis', marker='.', alpha=0.5, )
+    ax.plot_trisurf(dof_x, dof_y, dof_averages, triangles=dof_coordinates)
+    plt.title("Unit Volume Average Energies")
+
+    plt.show() 
+
+    
