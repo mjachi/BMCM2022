@@ -27,8 +27,8 @@ def wefem_multisource(mesh, t, source_locs):
     v = TestFunction(V)
 
     # Discretization
-    c = 1.5
-    k = 1
+    c = 1
+    k = 1.01
     dt = t[1] - t[0]
     u0 = Function(V)  # u0 = uN-1
     u1 = Function(V)  # u1 = uN1
@@ -44,6 +44,7 @@ def wefem_multisource(mesh, t, source_locs):
     A, b = assemble_system(a, L)
     solver = LUSolver(A, "mumps")
     solver.parameters["symmetric"] = True
+    bc.apply(A, b)
 
     # Solution
     u = Function(V)  # uN+1
@@ -57,7 +58,7 @@ def wefem_multisource(mesh, t, source_locs):
         b = assemble(L)
         if t_ < 0.1: 
             for source_point in source_points: 
-                delta = PointSource(V, source_point, fourier(3, t_) * dt**2)
+                delta = PointSource(V, source_point, fourier(4, t_) * dt**2)
             #delta = PointSource(V, source_loc, fourier(3, t_) * dt**2)
             
                 delta.apply(b)
@@ -67,7 +68,8 @@ def wefem_multisource(mesh, t, source_locs):
         u0.assign(u1)
         u1.assign(u)
 
-        if t_ in [0.1, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 2.75, 3.0, 4.75]:
+
+        if t_ in [0.05, 0.1, 0.15, 0.25, 0.35, 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 2.5, 2.75, 3.0, 4.75]:
             c = plot(
                 u,
                 vmin=.0,     
@@ -116,7 +118,7 @@ def awefem(mesh, t, source_loc):
     for _, t_ in enumerate(t[1:]):
         b = assemble(L)
         if t_ < 0.1: 
-            delta = PointSource(V, source_loc, sine_source(t_) * dt**2)
+            delta = PointSource(V, source_loc, 2 * sine_source(t_) * dt**2)
             #delta = PointSource(V, source_loc, fourier(3, t_) * dt**2)
             
             delta.apply(b)
@@ -128,8 +130,8 @@ def awefem(mesh, t, source_loc):
         if t_ in [0.05, 0.1, 0.15, 0.2, 0.25, 0.33, 0.5]:
             plot(
                 u,
-                vmin=.0,     
-                vmax=0.003,
+                #vmin=.0,     
+                #vmax=0.003,
                 cmap='rainbow',
                 alpha=0.5,        
                 title="Approximation without Friction at Time Step {:03f}".format(t_)
@@ -140,9 +142,13 @@ if __name__ == "__main__":
     ot, dt, nt = 0.0, 1e-3, 5000
     t = ot + np.arange(nt) * dt
 
-    mesh = UnitSquareMesh(200, 200, "crossed")
+    #mesh = UnitSquareMesh(200, 200, "crossed")
     #mesh = Mesh("circle_mesh.xml")
-    #mesh = Mesh("amphi2D.xml")
+    mesh = Mesh("amphi2D.xml")
+    #mesh = Mesh("ellipse.xml")
 
     #awefem(mesh, t, source_loc=(0., 0.1))
-    wefem_multisource(mesh, t, source_locs=[ (0.25, 0.25)])
+    #wefem_multisource(mesh, t, source_locs=[ (0.25, 0.25), (-0.25, 0.25), (0, -0.25)])
+
+    wefem_multisource(mesh,t, source_locs=[(0, 0.1)])
+    

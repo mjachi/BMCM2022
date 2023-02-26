@@ -20,7 +20,7 @@ def wefem_multisource(mesh, t, source_locs):
     V = FunctionSpace(mesh, "Lagrange", 1)
 
     # NOTE: FeniCS automatically specifies a 0 Neumann boundary condition
-    bc = DirichletBC(V, Constant(0), "on_boundary")
+    #bc = DirichletBC(V, Constant(0), "on_boundary")
 
     # Trial and test functions
     u = TrialFunction(V)
@@ -81,7 +81,7 @@ def awefem(mesh, t, source_loc):
     V = FunctionSpace(mesh, "Lagrange", 1)
 
     # NOTE: FeniCS automatically specifies a 0 Neumann boundary condition
-    bc = DirichletBC(V, Constant(0), "on_boundary")
+    #bc = DirichletBC(V, Constant(0), "on_boundary")
 
     # Trial and test functions
     u = TrialFunction(V)
